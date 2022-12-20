@@ -18,15 +18,18 @@ template <typename iterator>
 struct enumerate_iterator {
   iterator wrapped;
   int index;
+  int inc;
 
-  enumerate_iterator(iterator &&w) : wrapped{w}, index{0} {}
-  enumerate_iterator(iterator &&w, int idx) : wrapped{w}, index{idx} {}
+  enumerate_iterator(iterator &&w) : wrapped{w}, index{0}, inc{1} {}
+  enumerate_iterator(iterator &&w, int idx) : wrapped{w}, index{idx}, inc{1} {}
+  enumerate_iterator(iterator &&w, int idx, int inc)
+      : wrapped{w}, index{idx}, inc{inc} {}
 
   auto operator*() { return std::make_pair(index, *wrapped); }
 
   auto operator++() {
     ++wrapped;
-    ++index;
+    index += inc;
     return *this;
   }
   auto operator++(int) {
@@ -45,7 +48,9 @@ template <typename iterable> struct enumerate_range {
   auto begin() { return enumerate_iterator(std::begin(wrapped)); }
   auto end() { return enumerate_iterator(std::end(wrapped)); }
 
-  auto rbegin() { return enumerate_iterator(std::rbegin(wrapped)); }
+  auto rbegin() {
+    return enumerate_iterator(std::rbegin(wrapped), wrapped.size() - 1, -1);
+  }
   auto rend() { return enumerate_iterator(std::rend(wrapped)); }
 };
 template <typename iterable>
