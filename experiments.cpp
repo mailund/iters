@@ -3,14 +3,14 @@
 
 // Iterating in reverse...
 template <typename iterable> struct reverse_range {
-  iterable wrapped;
+  iterable &wrapped;
   auto begin() { return std::rbegin(wrapped); }
   auto end() { return std::rend(wrapped); }
 };
 
 template <typename iterable>
 struct reverse_range<iterable> reverse(iterable &&wrapped) {
-  return reverse_range<iterable>{wrapped}; // FIXME: check if I copy here!!!
+  return reverse_range<iterable>{wrapped};
 }
 
 // Enumerate
@@ -19,23 +19,34 @@ struct enumerate_iterator {
   iterator wrapped;
   int index;
 
-  enumerate_iterator(iterator w) : wrapped{w}, index{0} {}
-  enumerate_iterator(iterator w, int idx) : wrapped{w}, index{idx} {}
+  enumerate_iterator(iterator &&w) : wrapped{w}, index{0} {}
+  enumerate_iterator(iterator &&w, int idx) : wrapped{w}, index{idx} {}
 
   auto operator*() { return std::make_pair(index, *wrapped); }
+
   auto operator++() {
     ++wrapped;
     ++index;
     return *this;
   }
-  bool operator!=(enumerate_iterator &other) {
+  auto operator++(int) {
+    auto copy = *this;
+    ++(*this);
+    return copy;
+  }
+
+  bool operator!=(enumerate_iterator const &other) const {
     return this->wrapped != other.wrapped;
   }
 };
 template <typename iterable> struct enumerate_range {
-  iterable wrapped;
+  iterable &wrapped;
+
   auto begin() { return enumerate_iterator(std::begin(wrapped)); }
   auto end() { return enumerate_iterator(std::end(wrapped)); }
+
+  auto rbegin() { return enumerate_iterator(std::rbegin(wrapped)); }
+  auto rend() { return enumerate_iterator(std::rend(wrapped)); }
 };
 template <typename iterable>
 struct enumerate_range<iterable> enumerate(iterable &&wrapped) {
@@ -69,7 +80,7 @@ int main() {
 /* This doesn't work yet, because enumerate doesn't know how to
  iterate in reverse. That would require that I figure out the
  length of the iteration to begin with... */
-#if 0
+#if 1
   for (auto [i, j] : reverse(enumerate(v))) {
     std::cout << '(' << i << ',' << j << ") ";
   }
